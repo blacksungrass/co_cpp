@@ -14,6 +14,7 @@ int main(){
     co_thread t((void*)func);
     bool r = false;
     while(!r){
+        printf("r=%d\n",r);
         r = t.run();
     }
     return 0;
