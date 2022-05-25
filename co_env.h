@@ -93,6 +93,16 @@ public:
         __asm__ __volatile__("mov %0,%%rbp;mov $0,%%rax;leavel;ret;"::"g"(this->saved_rbp));
         return;
     }
+    void yield_event(int fd,int event){
+        save_context();
+
+        if(m_env==nullptr){
+            throw std::runtime_error("co_thread need a co_env to to yield_for some time");
+        }
+        m_env->register_event(fd,event,this);
+
+        __asm__ __volatile__("mov %0,%%rbp;mov $2,%%rax;leave;ret;"::"g"(this->saved_rbp));
+    }
     void yield_for(int ms){
         save_context();
 
@@ -113,12 +123,20 @@ public:
 
         __asm__ __volatile__("mov %0,%%rbp;mov $2,%%rax;leave;ret;"::"g"(this->saved_rbp));
     }
+    void suicide(){
+        this->finished = true;
+        __asm__ __volatile__("mov %0,%%rbp;mov $1,%%rax;leave;ret;"::"g"(this->saved_rbp));
+    }
     static void finish(){
         co_thread* self;
         __asm__ __volatile__("mov 8(%%rbp),%0":"=g"(self));
         self->finished = true;
-         __asm__ __volatile__("mov %0,%%rbp;mov $1,%%rax;leave;ret;"::"g"(self->saved_rbp));
-        return;
+        __asm__ __volatile__("mov %0,%%rbp;mov $1,%%rax;leave;ret;"::"g"(self->saved_rbp));
+    }
+    ~co_thread(){
+        if(m_addr!=nullptr){
+            free(m_addr);
+        }
     }
 };
 
@@ -137,15 +155,18 @@ co_env::co_env(){
     cur=-1;
     epoll_fd = epoll_create(100);
 }
+
 void co_env::add_task(co_thread_func_t func,void* args){
     rd_list.insert(new co_thread(func,args,this));
 }
+
 void co_env::register_event(int fd,int event,co_thread* thread_ptr){
     epoll_event ev;
     ev.events = event;
     ev.data.ptr = new co_event_info(thread_ptr,fd);
     epoll_ctl(epoll_fd,EPOLL_CTL_ADD,fd,&ev);
 }
+
 void co_env::loop(){
     while(true){
         if(rd_list.empty()&&block_list.empty()){
