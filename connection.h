@@ -12,12 +12,14 @@ public:
 
     }
     
-    void read_n_bytes(int n,char* buf){
+    int read_n_bytes(int n,char* buf){
+        int ret = n;
         while(n>0){
             int bytes_read = recv(m_socket,buf,n,0);
             if(bytes_read==0){
                 //eof
-                m_thread.suicide();
+                //m_thread.suicide();
+                return -1;
             }
             else if(bytes_read==n){
                 break;
@@ -28,7 +30,8 @@ public:
                 }
                 else{
                     //got error
-                    m_thread.suicide();
+                    //m_thread.suicide();
+                    return -1;
                 }
             }
             else{
@@ -36,25 +39,37 @@ public:
                 n -= bytes_read;
             }
         }
+        return ret;
     }
     
     int read_as_more_as_possible(char* buf,int maxnum){
         int bytes_read = recv(m_socket,buf,maxnum,0);
         if(bytes_read<0&&errno!=EAGAIN&&errno!=EWOULDBLOCK || bytes_read==0){
             //got error or eof
-            m_thread.suicide();
+            //m_thread.suicide();
+            return -1;
+        }
+        if(bytes_read<0){
+            m_thread.yield_event(m_socket,EPOLLIN);
+            bytes_read = recv(m_socket,buf,maxnum,0);
+            if(bytes_read<0&&errno!=EAGAIN&&errno!=EWOULDBLOCK || bytes_read==0){
+                return -1;
+            }
         }
         return bytes_read;
+        
     }
     
-    void write(char* buf,int n){
+    int write(char* buf,int n){
+        int ret = n;
         while(n>0){
             auto sent = send(m_socket,buf,n,0);
             if(sent==n)
                 break;
             else if(sent==0){
                 //eof
-                m_thread.suicide();
+                //m_thread.suicide();
+                return -1;
             }
             else if(sent<0){
                 if(errno==EAGAIN||errno==EWOULDBLOCK){
@@ -62,7 +77,8 @@ public:
                 }
                 else{
                     //got error
-                    m_thread.suicide();
+                    //m_thread.suicide();
+                    return -1;
                 }
             }
             else{
@@ -70,5 +86,6 @@ public:
                 buf += sent;
             }
         }
+        return ret;
     }
 };

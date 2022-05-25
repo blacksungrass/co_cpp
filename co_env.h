@@ -6,9 +6,9 @@
 #include <cstdlib>
 #include <sys/epoll.h>
 #include <sys/timerfd.h>
-//#include <sys/time.h>
-//#include <unistd.h>
-//#include <time.h>
+#include <map>
+#include "log.h"
+
 
 //forward declares
 class co_thread;
@@ -19,12 +19,18 @@ class co_env{
 private:
     std::set<co_thread*> rd_list,block_list;
     int epoll_fd;
-    int cur;
+    int cur_task_id;
+    std::map<int,co_thread*> m_records;
+    std::map<co_thread*,int> m_inv_records;
+    std::set<co_thread*> cancel_list,add_list;
+    void remove_canceled_task();
 public:
     co_env();
-    void add_task(co_thread_func_t,void*);
+    //add task and return a task id
+    int add_task(co_thread_func_t,void*);
     void register_event(int fd,int event,co_thread* thread_ptr);
     void loop();
+    void cancel_task(int);
 };
 
 
@@ -152,12 +158,20 @@ public:
 
 
 co_env::co_env(){
-    cur=-1;
+    cur_task_id = -1;
     epoll_fd = epoll_create(100);
 }
 
-void co_env::add_task(co_thread_func_t func,void* args){
-    rd_list.insert(new co_thread(func,args,this));
+int co_env::add_task(co_thread_func_t func,void* args){
+    co_thread* p = new co_thread(func,args,this);
+    ++cur_task_id;
+    while(m_records.count(cur_task_id)){
+        ++cur_task_id;
+    }
+    m_records[cur_task_id] = p;
+    m_inv_records[p] = cur_task_id;
+    add_list.insert(p);
+    return cur_task_id;
 }
 
 void co_env::register_event(int fd,int event,co_thread* thread_ptr){
@@ -168,18 +182,19 @@ void co_env::register_event(int fd,int event,co_thread* thread_ptr){
 }
 
 void co_env::loop(){
+    Log("coenv start to loop");
     while(true){
-        if(rd_list.empty()&&block_list.empty()){
+        if(rd_list.empty()&&block_list.empty()&&add_list.empty()){
             break;
         }
         epoll_event events[200];
         int sleep_time = 0;
-        if(rd_list.empty()){
+        if(rd_list.empty()&&add_list.empty()){
             sleep_time = -1;
         }
-        //printf("rd_list_len=%d\tblock_list_len=%d\n",rd_list.size(),block_list.size());
+        printf("rd_list_len=%d\tblock_list_len=%d\n",rd_list.size(),block_list.size());
         int num = epoll_wait(epoll_fd,events,200,sleep_time);
-        //printf("event num got from epoll:%d\n",num);
+        printf("event num got from epoll:%d\n",num);
         for(int i=0;i<num;++i){
             co_event_info* info_ptr = (co_event_info*)(events[i].data.ptr);
             co_thread* thread_ptr = info_ptr->thread_ptr;
@@ -193,10 +208,18 @@ void co_env::loop(){
         }
         auto it = rd_list.begin();
         while(it!=rd_list.end()){
+            if(cancel_list.count(*it)){//if in cancel list
+                delete (*it);
+                it = rd_list.erase(it);
+                continue;
+            }
             int val = (*it)->run();
             //printf("co_thread %x yield %d\n",*it,val);
             if(val==1){//if finished
                 delete (*it);
+                int task_id = m_inv_records[*it];
+                m_inv_records.erase(*it);
+                m_records.erase(task_id);
                 it = rd_list.erase(it);
             }
             else if(val==2){//if blocked
@@ -207,5 +230,45 @@ void co_env::loop(){
                 ++it;
             }
         }
+        remove_canceled_task();
+
+        //append add_list
+        rd_list.insert(add_list.begin(),add_list.end());
+        add_list.clear();
+    }
+}
+
+void co_env::remove_canceled_task(){
+    auto it = block_list.begin();
+    while(it!=block_list.end()){
+        if(cancel_list.count(*it)){
+            delete (*it);
+            it = block_list.erase(it);
+        }
+        else{
+            ++it;
+        }
+    }
+
+    it = rd_list.begin();
+    while(it!=rd_list.end()){
+        if(cancel_list.count(*it)){
+            delete (*it);
+            it = rd_list.erase(it);
+        }
+        else{
+            ++it;
+        }
+    }
+
+    cancel_list.clear();
+}
+
+void co_env::cancel_task(int task_id){
+    auto it = m_records.find(task_id);
+    if(it!=m_records.end()){
+        cancel_list.insert(it->second);
+        m_inv_records.erase(it->second);
+        m_records.erase(it);
     }
 }

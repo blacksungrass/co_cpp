@@ -3,6 +3,6 @@
 using namespace std;
 
 int main(){
-    echo_server server(7777,0);
+    echo_server server(7776,5);
     server.run();
 }
