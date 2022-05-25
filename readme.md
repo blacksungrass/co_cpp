@@ -8,7 +8,10 @@
 - [ ] 解决在co_thread中使用cout会报错的问题
 - [ ] 添加日志
 - [ ] 完善文档
-- [ ] 完善例程
+- [o] 完善例程
+    - [x] tcp echo server
+    - [ ] socks5 proxy server
+    - [ ] http server
 - [ ] 完善测试
 - [ ] 添加压测工具并进行压测
 
