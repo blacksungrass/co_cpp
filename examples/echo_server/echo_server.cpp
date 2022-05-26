@@ -1,5 +1,4 @@
-#include "co_env.h"
-#include "connection.h"
+#include "echo_server.h"
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -10,26 +9,6 @@
 #include <sys/time.h>
 #include <sys/cdefs.h>
 #include "log.h"
-
-//forward declare
-class echo_client;
-class echo_server{
-private:
-    int m_port;
-    int m_timeout;
-    int m_listen_socket;
-    co_env* m_env;
-    std::set<echo_client*> m_conns;
-    int m_listen_task_id;
-    int m_check_active_task_id;
-public:
-    echo_server(int port,int timeout);
-    void run();
-    void close_client(echo_client* client);
-    ~echo_server();
-    static void check_inavtive_func(co_thread& t,void* args);
-    static void listen_func(co_thread& t,void* args);
-};
 
 time_t get_time_now(){
     struct timeval tv;
@@ -43,50 +22,42 @@ int make_non_blocking(int fd){
     return oldflag;
 }
 
-class echo_client{
-private:
-    time_t m_last_activate_time;
-    int m_socket;
-    co_env* m_env;
-    echo_server* m_server;
-    //bool m_closed;
-    int m_task_id;
-public:
-    echo_client(int s,co_env* env,echo_server* server){
-        m_socket = s;
-        m_env = env;
-        //m_closed = false;
-        m_server = server;
-        make_non_blocking(m_socket);
-        m_task_id = m_env->add_task(work,this);
-        m_last_activate_time = get_time_now();
+
+echo_client::echo_client(int s,co_env* env,echo_server* server){
+    m_socket = s;
+    m_env = env;
+    m_server = server;
+    make_non_blocking(m_socket);
+    m_task_id = m_env->add_task(work,this);
+    m_last_activate_time = get_time_now();
+}
+int echo_client::get_last_active_time(){
+    return m_last_activate_time;
+}
+void echo_client::work(co_thread& t,void* args){    
+    echo_client* self = (echo_client*)(args);
+    connection conn(self->m_socket,t);
+    char buf[200];
+    while(true){
+        int cnt = conn.read_as_more_as_possible(buf,200);
+        if(cnt<0)
+            break;
+        self->m_last_activate_time = get_time_now();
+        int ret = conn.write(buf,cnt);
+        if(ret<0)
+            break;
+        self->m_last_activate_time = get_time_now();
     }
-    int get_last_active_time(){
-        return m_last_activate_time;
-    }
-    static void work(co_thread& t,void* args){    
-        echo_client* self = (echo_client*)(args);
-        connection conn(self->m_socket,t);
-        char buf[200];
-        while(true){
-            int cnt = conn.read_as_more_as_possible(buf,200);
-            if(cnt<0)
-                break;
-            self->m_last_activate_time = get_time_now();
-            int ret = conn.write(buf,cnt);
-            if(ret<0)
-                break;
-            self->m_last_activate_time = get_time_now();
-        }
-        //self->m_closed = true;
-        Log("client close due to error");
-        self->m_server->close_client(self);
-    }
-    ~echo_client(){
-        m_env->cancel_task(m_task_id);
-        close(m_socket);
-    }
-};
+    //self->m_closed = true;
+    Log("client close due to error");
+    self->m_server->close_client(self);
+}
+
+echo_client::~echo_client(){
+    m_env->cancel_task(m_task_id);
+    close(m_socket);
+}
+
 
 echo_server::echo_server(int port,int timeout){
     m_port = port;

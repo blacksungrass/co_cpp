@@ -32,7 +32,7 @@ int main(){
 
     env.loop();
 
-    for(int i=0;i<=20;++i){
+    for(long i=0;i<=20;++i){
         env.add_task(co_func,(void*)i);
     }
     env.loop();
