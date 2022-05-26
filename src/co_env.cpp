@@ -124,7 +124,7 @@ void co_env::register_event(int fd,int event,co_thread* thread_ptr){
 }
 
 void co_env::loop(){
-    Log("coenv start to loop");
+    //Log("coenv start to loop");
     while(true){
         if(rd_list.empty()&&block_list.empty()&&add_list.empty()){
             break;
@@ -134,9 +134,9 @@ void co_env::loop(){
         if(rd_list.empty()&&add_list.empty()){
             sleep_time = -1;
         }
-        printf("rd_list_len=%d\tblock_list_len=%d\n",rd_list.size(),block_list.size());
+        //printf("rd_list_len=%d\tblock_list_len=%d\n",rd_list.size(),block_list.size());
         int num = epoll_wait(epoll_fd,events,200,sleep_time);
-        printf("event num got from epoll:%d\n",num);
+        //printf("event num got from epoll:%d\n",num);
         for(int i=0;i<num;++i){
             co_event_info* info_ptr = (co_event_info*)(events[i].data.ptr);
             co_thread* thread_ptr = info_ptr->thread_ptr;
