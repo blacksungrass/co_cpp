@@ -52,11 +52,25 @@ void co_thread::yield(){
     __asm__ __volatile__("mov %0,%%rbp;mov $0,%%rax;leave;ret;"::"g"(this->saved_rbp));
     return;
 }
+
+void co_thread::yield_events(int fds[],int events[],int n){
+    save_context();
+
+    if(m_env==nullptr){
+        throw std::runtime_error("co_thread need a co_env to to yield for some event");
+    }
+    for(int i=0;i<n;++i){
+        m_env->register_event(fds[i],events[i],this);
+    }
+
+    __asm__ __volatile__("mov %0,%%rbp;mov $2,%%rax;leave;ret;"::"g"(this->saved_rbp));
+}
+
 void co_thread::yield_event(int fd,int event){
     save_context();
 
     if(m_env==nullptr){
-        throw std::runtime_error("co_thread need a co_env to to yield_for some time");
+        throw std::runtime_error("co_thread need a co_env to to yield for some event");
     }
     m_env->register_event(fd,event,this);
 

@@ -57,6 +57,7 @@ public:
     int run();
     void yield();
     void yield_event(int fd,int event);
+    void yield_events(int fds[],int events[],int n);
     void yield_for(int ms);
     void suicide();
     static void finish();

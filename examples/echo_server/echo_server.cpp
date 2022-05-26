@@ -39,7 +39,7 @@ void echo_client::work(co_thread& t,void* args){
     connection conn(self->m_socket,t);
     char buf[200];
     while(true){
-        int cnt = conn.read_as_more_as_possible(buf,200);
+        int cnt = conn.read_some(buf,200);
         if(cnt<0)
             break;
         self->m_last_activate_time = get_time_now();

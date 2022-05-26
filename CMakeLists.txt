@@ -6,3 +6,4 @@ include_directories(examples/utils/)
 
 add_subdirectory(examples/basic)
 add_subdirectory(examples/echo_server)
+add_subdirectory(examples/socks5_server)
