@@ -1,5 +1,6 @@
 #include "socks5_client.h"
 #include <fcntl.h>
+#include <cstring>
 
 static int make_non_blocking(int fd){
     int oldflag = fcntl(fd,F_GETFL);
@@ -8,29 +9,29 @@ static int make_non_blocking(int fd){
 }
 
 static void copy(char* buf,uint32_t val){
-    buf[0] = val&0xff;
-    buf[1] = val&(0xff00)>>8;
-    buf[2] = val&(0xff0000)>>16;
-    buf[3] = val&(0xff000000)>>24;
+    buf[0] = (val)&0xff;
+    buf[1] = (val&(0xff00))>>8;
+    buf[2] = (val&(0xff0000))>>16;
+    buf[3] = (val&(0xff000000))>>24;
 }
 
 static void copy(char* buf,uint16_t val){
     buf[0] = val&0xff;
-    buf[1] = val&(0xff00)>>8;
+    buf[1] = (val&(0xff00))>>8;
 }
 
 static void copy_to(char* buf,uint32_t& val){
     val = 0;
-    val |= (buf[0]<<24);
-    val |= (buf[1]<<16);
-    val |= (buf[2]<<8);
-    val |= (buf[3]);
+    val |= ((unsigned char)buf[3]<<24);
+    val |= ((unsigned char)buf[2]<<16);
+    val |= ((unsigned char)buf[1]<<8);
+    val |= ((unsigned char)buf[0]);
 }
 
 static void copy_to(char* buf,uint16_t& val){
     val = 0;
-    val |= (buf[0]<<8);
-    val |= (buf[1]);
+    val |= ((unsigned char)buf[1]<<8);
+    val |= ((unsigned char)buf[0]);
 }
 
 socks5_client::socks5_client(int socket,socks5_server* server,co_env* env,sockaddr_in* server_addr)
@@ -41,6 +42,7 @@ socks5_client::socks5_client(int socket,socks5_server* server,co_env* env,sockad
     m_server_port = ntohs(m_server_addr->sin_port);
     m_cothread = m_co_env->add_task(process,this);
     m_remote_socket = -1;
+    m_trans_cothread1 = m_trans_cothread2 = -1;
 }
 
 void socks5_client::process(co_thread& thread,void* args){
@@ -54,29 +56,22 @@ void socks5_client::process(co_thread& thread,void* args){
         self->close();
         return;
     }
-    char buf[300];
-    while(true){
-        int ret = conn.read_some(buf,300);
-        if(ret<0){
-            self->close();
-            return;
-        }
-        ret = conn.write(buf,ret);
-        if(ret<0){
-            self->close();
-            return;
-        }
-    }
+    self->m_trans_cothread1 = self->m_co_env->add_task(trans_func1,self);
+    self->m_trans_cothread2 = self->m_co_env->add_task(trans_func2,self);
+    self->m_cothread = -1;
+
+    return;
 }
 
 bool socks5_client::handle_request(co_thread& thread){
     connection conn(m_socket,thread);
     char buf[300];
     char retbuf[50] = {5,0,0,1};
-    copy(buf+4,m_server_addr->sin_addr.s_addr);
-    copy(buf+8,m_server_addr->sin_port);
+    copy(retbuf+4,m_server_addr->sin_addr.s_addr);
+    copy(retbuf+8,m_server_addr->sin_port);
+
     int r = conn.read_n_bytes(4,buf);
-    if(r<0){}
+    if(r<0)
         return false;
     if(buf[0]!=5){
         retbuf[1] = 0xff;
@@ -93,13 +88,20 @@ bool socks5_client::handle_request(co_thread& thread){
         conn.write(retbuf,10);
         return false;
     }
-    conn.read_n_bytes(6,buf+4);
+    r = conn.read_n_bytes(6,buf+4);
+    if(r<0)
+        return false;
+    
+    memset(&m_remote_addr,0,sizeof(m_remote_addr));
     copy_to(buf+4,m_remote_addr.sin_addr.s_addr);
-    copy_to(buf+6,m_remote_addr.sin_port);
+    copy_to(buf+8,m_remote_addr.sin_port);
+    
+    m_remote_addr.sin_family = AF_INET;
     m_remote_socket = socket(AF_INET,SOCK_STREAM,0);
     make_non_blocking(m_remote_socket);
     connection remote_conn(m_remote_socket,thread);
     bool ret = remote_conn.connect((sockaddr*)&m_remote_addr,sizeof(m_remote_addr));
+    
     if(!ret){
         retbuf[1] = 0x01;
         conn.write(retbuf,10);
@@ -157,9 +159,55 @@ void socks5_client::close(){
 }
 
 socks5_client::~socks5_client(){
-    //todo
     ::close(m_socket);
     if(m_remote_socket>=0){
         ::close(m_remote_socket);
+    }
+    if(m_cothread>=0){
+        m_co_env->cancel_task(m_cothread);
+    }
+    if(m_trans_cothread1>=0){
+        m_co_env->cancel_task(m_trans_cothread1);
+    }
+    if(m_trans_cothread2>=0){
+        m_co_env->cancel_task(m_trans_cothread2);
+    }
+}
+
+void socks5_client::trans_func1(co_thread& thread,void* args){
+    socks5_client* self = (socks5_client*)(args);
+    connection conn1(self->m_socket,thread);
+    connection conn2(self->m_remote_socket,thread);
+    char buf[3*1024];
+    while(true){
+        int r = conn1.read_some(buf,3*1024);
+        if(r<0){
+            self->close();
+            return;
+        }
+        r = conn2.write(buf,r);
+        if(r<0){
+            self->close();
+            return;
+        }
+    }
+}
+
+void socks5_client::trans_func2(co_thread& thread,void* args){
+    socks5_client* self = (socks5_client*)(args);
+    connection conn2(self->m_socket,thread);
+    connection conn1(self->m_remote_socket,thread);
+    char buf[3*1024];
+    while(true){
+        int r = conn1.read_some(buf,3*1024);
+        if(r<0){
+            self->close();
+            return;
+        }
+        r = conn2.write(buf,r);
+        if(r<0){
+            self->close();
+            return;
+        }
     }
 }

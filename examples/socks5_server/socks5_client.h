@@ -16,13 +16,16 @@ private:
     sockaddr_in* m_server_addr;
     ushort m_server_port;
     int m_cothread;
+    int m_trans_cothread1,m_trans_cothread2;
 
     bool handshake(co_thread&);
     bool handle_request(co_thread&);
+
+    static void process(co_thread&,void*);
+    static void trans_func1(co_thread&,void*);
+    static void trans_func2(co_thread&,void*);
 public:
     socks5_client(int socket,socks5_server* server,co_env* env,sockaddr_in*);
-    static void process(co_thread&,void*);
-    
     void close();
     ~socks5_client();
 };

@@ -1,6 +1,7 @@
 #include "socks5_server.h"
 #include <netinet/in.h>
 #include <unistd.h>
+#include <exception>
 
 socks5_server::socks5_server(int port){
     m_port = port;
@@ -9,10 +10,16 @@ socks5_server::socks5_server(int port){
     m_server_addr.sin_family = AF_INET;
     m_server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     m_server_addr.sin_port = htons(port);
-    bind(m_listen_socket,(sockaddr*)&m_server_addr,sizeof(m_server_addr));
-    listen(m_listen_socket,10);
+    int r = bind(m_listen_socket,(sockaddr*)&m_server_addr,sizeof(m_server_addr));
+    if(r<0){
+        throw std::runtime_error("bind failed");
+    }
+    r = listen(m_listen_socket,10);
+    if(r<0){
+        throw std::runtime_error("listen failed");
+    }
     socklen_t tmp;
-    getsockname(m_listen_socket,(sockaddr*)(&m_server_addr),&tmp);
+    getsockname(m_listen_socket,(sockaddr*)(&m_server_addr),&tmp);//todo here we got 0.0.0.0,that's not what we need
     m_listen_cothread = m_co_env->add_task(&listen_func,this);
 }
 

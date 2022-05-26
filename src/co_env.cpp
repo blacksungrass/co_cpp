@@ -76,6 +76,7 @@ void co_thread::yield_event(int fd,int event){
 
     __asm__ __volatile__("mov %0,%%rbp;mov $2,%%rax;leave;ret;"::"g"(this->saved_rbp));
 }
+
 void co_thread::yield_for(int ms){
     save_context();
 
@@ -96,16 +97,19 @@ void co_thread::yield_for(int ms){
 
     __asm__ __volatile__("mov %0,%%rbp;mov $2,%%rax;leave;ret;"::"g"(this->saved_rbp));
 }
+
 void co_thread::suicide(){
     this->finished = true;
     __asm__ __volatile__("mov %0,%%rbp;mov $1,%%rax;leave;ret;"::"g"(this->saved_rbp));
 }
+
 void co_thread::finish(){
     co_thread* self;
     __asm__ __volatile__("mov 8(%%rbp),%0":"=g"(self));
     self->finished = true;
     __asm__ __volatile__("mov %0,%%rbp;mov $1,%%rax;leave;ret;"::"g"(self->saved_rbp));
 }
+
 co_thread::~co_thread(){
     if(m_addr!=nullptr){
         free(m_addr);
@@ -123,6 +127,9 @@ int co_env::add_task(co_thread_func_t func,void* args){
     ++cur_task_id;
     while(m_records.count(cur_task_id)){
         ++cur_task_id;
+        if(cur_task_id<0){
+            cur_task_id = 0;
+        }
     }
     m_records[cur_task_id] = p;
     m_inv_records[p] = cur_task_id;
