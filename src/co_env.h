@@ -41,26 +41,49 @@ public:
 */
 class co_thread{
 private:
-    long* m_addr;
+    long* m_addr;//协程栈空间
+    long* m_local_state;//保存切换协程时的本地线程，至少9*8=72个字节大小
     bool finished;
     long saved_rbp;
     co_env* m_env;
 
+    /*
     __attribute__((always_inline))
-    inline void save_context();
+    inline void restore_user_context();
 
     __attribute__((always_inline))
-    inline void restore_context();
+    inline void restore_cothread_context();
+
+    __attribute__((always_inline))
+    inline void save_user_context();
+
+    __attribute__((always_inline))
+    inline void save_cothread_context();
+    */
+
+    void yield_event_impl(int fd,int event);
+    void yield_events_impl(int fds[],int events[],int n);
+    void yield_for_impl(int ms);
+    void yield_impl();
+    int run_impl();
 public:
     co_thread(co_thread_func_t func,void* args,co_env* env_p=nullptr);
+    
     //terminated or not
     int run();
+
     void yield();
+
     void yield_event(int fd,int event);
+
     void yield_events(int fds[],int events[],int n);
+    
     void yield_for(int ms);
+
     void suicide();
+
     static void finish();
+
     ~co_thread();
 };
 

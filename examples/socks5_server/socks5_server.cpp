@@ -2,6 +2,14 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <exception>
+#include <fcntl.h>
+
+
+static int make_non_blocking(int fd){
+    int oldflag = fcntl(fd,F_GETFL);
+    fcntl(fd,F_SETFL,oldflag|O_NONBLOCK);
+    return oldflag;
+}
 
 socks5_server::socks5_server(int port){
     m_port = port;
@@ -10,6 +18,9 @@ socks5_server::socks5_server(int port){
     m_server_addr.sin_family = AF_INET;
     m_server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     m_server_addr.sin_port = htons(port);
+    make_non_blocking(m_listen_socket);
+    int one = 1;
+    setsockopt(m_listen_socket,SOL_SOCKET,SO_REUSEADDR,&one,sizeof(one));
     int r = bind(m_listen_socket,(sockaddr*)&m_server_addr,sizeof(m_server_addr));
     if(r<0){
         throw std::runtime_error("bind failed");
