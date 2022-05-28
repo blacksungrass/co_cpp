@@ -6,7 +6,6 @@ using namespace std;
 
 void co_func(co_thread& t,void* arg){
     long v = (long)arg;
-    //printf("before v=%d\n",v);
     t.yield_for(v*1000);
     printf("v=%d\n",v);
 }

@@ -9,7 +9,7 @@ connection::connection(int socket,co_thread& t):m_socket(socket),m_thread(t){
 int connection::read_n_bytes(int n,char* buf){
     int ret = n;
     while(n>0){
-        int bytes_read = recv(m_socket,buf,n,0);
+        int bytes_read = recv(m_socket,buf,n,MSG_DONTWAIT);
         if(bytes_read==0){
             //eof
             //m_thread.suicide();
@@ -38,7 +38,7 @@ int connection::read_n_bytes(int n,char* buf){
 
 //todo add timeout parameter
 int connection::read_some(char* buf,int maxnum){
-    int bytes_read = recv(m_socket,buf,maxnum,0);
+    int bytes_read = recv(m_socket,buf,maxnum,MSG_DONTWAIT);
     if(bytes_read<0&&errno!=EAGAIN&&errno!=EWOULDBLOCK || bytes_read==0){
         //got error or eof
         //m_thread.suicide();
@@ -46,7 +46,7 @@ int connection::read_some(char* buf,int maxnum){
     }
     if(bytes_read<0){
         m_thread.yield_event(m_socket,EPOLLIN);
-        bytes_read = recv(m_socket,buf,maxnum,0);
+        bytes_read = recv(m_socket,buf,maxnum,MSG_DONTWAIT);
         if(bytes_read<0&&errno!=EAGAIN&&errno!=EWOULDBLOCK || bytes_read==0){
             return -1;
         }
@@ -59,7 +59,7 @@ int connection::read_some(char* buf,int maxnum){
 int connection::write(char* buf,int n){
     int ret = n;
     while(n>0){
-        auto sent = send(m_socket,buf,n,0);
+        auto sent = send(m_socket,buf,n,MSG_NOSIGNAL|MSG_DONTWAIT);
         if(sent==n)
             break;
         else if(sent==0){
