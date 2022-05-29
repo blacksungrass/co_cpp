@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
 #option(CMAKE_BUILD_TYPE "build type" Release)
+set(CMAKE_CXX_STANDARD 17)
 
 project(co_cpp CXX ASM)
 

@@ -7,4 +7,5 @@ target_sources(socks5_server
                 ../../src/co_env.cpp 
                 ../../src/co_env.S
                 ../../src/connection.cpp 
+                ../../src/co_event_manager.cpp
                 ../utils/log.cpp)

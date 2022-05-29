@@ -4,4 +4,5 @@ target_sources(basic
                 main.cpp
                 ../../src/co_env.cpp
                 ../../src/co_env.S
-                ../utils/log.cpp)
+                ../utils/log.cpp
+                ../../src/co_event_manager.cpp)

@@ -1,5 +1,6 @@
 #include "co_env.h"
-
+#include <algorithm>
+#include <functional>
 /*
 * x86-64 calling convention refer https://aaronbloomfield.github.io/pdr/book/x86-64bit-ccc-chapter.pdf
 * caller need to save r10,r11 and parameters(rdi,rsi,rdx,rcx,r8,r9)
@@ -8,7 +9,7 @@
 
 co_thread::co_thread(co_thread_func_t func,void* args,co_env* env_p){
     m_env = env_p;
-    const long stack_size = 1024;
+    const long stack_size = 1024;//todo stack size could be a constructor parameter
     finished = false;
     
     m_addr = (long*)malloc(stack_size*sizeof(long));
@@ -21,7 +22,6 @@ co_thread::co_thread(co_thread_func_t func,void* args,co_env* env_p){
     
     m_addr[0] = (long)func;//rip
     m_addr[1] = (long)(m_addr+ret_addr_idx);//rsp
-    //printf("rsp now is %x\n",m_addr[1]);
     m_addr[2] = (long)(m_addr+ret_addr_idx);//rbp
     m_addr[3] = (long)(this);//rdi(first param)
     m_addr[4] = (long)(args);//rsi(seocnd param)
@@ -86,30 +86,58 @@ co_thread::~co_thread(){
 
 
 co_env::co_env(){
-    cur_task_id = -1;
-    epoll_fd = epoll_create(100);
 }
 
-int co_env::add_task(co_thread_func_t func,void* args){
+long co_env::add_task(co_thread_func_t func,void* args){
     co_thread* p = new co_thread(func,args,this);
-    ++cur_task_id;
-    while(m_records.count(cur_task_id)){
-        ++cur_task_id;
-        if(cur_task_id<0){
-            cur_task_id = 0;
+    add_list.insert(p);
+    valid_cothreads.insert(p);
+    return (long)p;
+}
+
+void co_env::remove_co_thread(co_thread* ptr){
+    if(valid_cothreads.count(ptr)==0)
+        return;
+    valid_cothreads.erase(ptr);
+    m_event_manager.cancel_co_thread(ptr);
+    delete ptr;
+}
+
+long co_env::register_event(int fd,int event,co_thread* thread_ptr){
+    long event_id = m_event_manager.add_event(fd,event,thread_ptr);
+    //co_thread_events[thread_ptr].emplace_back(event_id);
+    return event_id;
+}
+
+void co_env::handle_activated_cothread(co_thread* p){
+    if(block_list.count(p)){
+        block_list.erase(p);
+        rd_list.insert(p);
+    }
+}
+
+void co_env::process_rd_list(){
+    auto it = rd_list.begin();
+    while(it!=rd_list.end()){
+        if(cancel_list.count(*it)){//if in cancel list
+            remove_co_thread(*it);
+            it = rd_list.erase(it);
+            continue;
+        }
+        int val = (*it)->run();//run co_thread
+
+        if(val==1){//if finished
+            remove_co_thread(*it);
+            it = rd_list.erase(it);
+        }
+        else if(val==2){//if blocked
+            block_list.insert(*it);
+            it = rd_list.erase(it);
+        }
+        else{//normal
+            ++it;
         }
     }
-    m_records[cur_task_id] = p;
-    m_inv_records[p] = cur_task_id;
-    add_list.insert(p);
-    return cur_task_id;
-}
-
-void co_env::register_event(int fd,int event,co_thread* thread_ptr){
-    epoll_event ev;
-    ev.events = event;
-    ev.data.ptr = new co_event_info(thread_ptr,fd);
-    epoll_ctl(epoll_fd,EPOLL_CTL_ADD,fd,&ev);
 }
 
 void co_env::loop(){
@@ -118,88 +146,69 @@ void co_env::loop(){
         if(rd_list.empty()&&block_list.empty()&&add_list.empty()){
             break;
         }
-        epoll_event events[200];
         int sleep_time = 0;
         if(rd_list.empty()&&add_list.empty()){
             sleep_time = -1;
         }
         //printf("rd_list_len=%d\tblock_list_len=%d\n",rd_list.size(),block_list.size());
-        int num = epoll_wait(epoll_fd,events,200,sleep_time);
+        m_event_manager.handle_event([this](co_thread* p){
+            this->handle_activated_cothread(p);
+        },sleep_time);
         //printf("event num got from epoll:%d\n",num);
-        for(int i=0;i<num;++i){
-            co_event_info* info_ptr = (co_event_info*)(events[i].data.ptr);
-            co_thread* thread_ptr = info_ptr->thread_ptr;
-            int fd = info_ptr->fd;
-            if(block_list.count(thread_ptr)){
-                block_list.erase(thread_ptr);
-                rd_list.insert(thread_ptr);
-            }
-            delete info_ptr;
-            epoll_ctl(epoll_fd,EPOLL_CTL_DEL,fd,nullptr);
-        }
-        auto it = rd_list.begin();
-        while(it!=rd_list.end()){
-            if(cancel_list.count(*it)){//if in cancel list
-                delete (*it);
-                it = rd_list.erase(it);
-                continue;
-            }
-            int val = (*it)->run();
-            //printf("co_thread %x yield %d\n",*it,val);
-            if(val==1){//if finished
-                delete (*it);
-                int task_id = m_inv_records[*it];
-                m_inv_records.erase(*it);
-                m_records.erase(task_id);
-                it = rd_list.erase(it);
-            }
-            else if(val==2){//if blocked
-                block_list.insert(*it);
-                it = rd_list.erase(it);
-            }
-            else{//normal
-                ++it;
-            }
-        }
-        remove_canceled_task();
+        
+        process_rd_list();
 
         //append add_list
         rd_list.insert(add_list.begin(),add_list.end());
         add_list.clear();
+
+        remove_canceled_task();
+    }
+}
+
+
+static void erase_if(std::set<co_thread*>& set, std::function<bool(co_thread*)> pred){
+    auto it = begin(set);
+    while(it!=end(set)){
+        if(pred(*it)){
+            it = set.erase(it);
+        }
+        else{
+            ++it;
+        }
     }
 }
 
 void co_env::remove_canceled_task(){
-    auto it = block_list.begin();
-    while(it!=block_list.end()){
-        if(cancel_list.count(*it)){
-            delete (*it);
-            it = block_list.erase(it);
+    
+    erase_if(block_list,[&](co_thread* p)->bool{
+        if(cancel_list.count(p)){
+            remove_co_thread(p);
+            return true;
         }
         else{
-            ++it;
+            return false;
         }
-    }
-
-    it = rd_list.begin();
-    while(it!=rd_list.end()){
-        if(cancel_list.count(*it)){
-            delete (*it);
-            it = rd_list.erase(it);
+    });
+    erase_if(rd_list,[&](co_thread* p){
+        if(cancel_list.count(p)){
+            remove_co_thread(p);
+            return true;
         }
         else{
-            ++it;
+            return false;
         }
-    }
-
+    });
     cancel_list.clear();
 }
 
-void co_env::cancel_task(int task_id){
-    auto it = m_records.find(task_id);
-    if(it!=m_records.end()){
-        cancel_list.insert(it->second);
-        m_inv_records.erase(it->second);
-        m_records.erase(it);
+void co_env::cancel_task(long task_id){
+    co_thread* p = (co_thread*)(task_id);
+    if(valid_cothreads.count(p)){
+        cancel_list.insert(p);
     }
+}
+
+void co_env::cancel_event(long event_id){
+    m_event_manager.cancel_event(event_id);
 }
