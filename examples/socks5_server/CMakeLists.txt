@@ -4,8 +4,5 @@ target_sources(socks5_server
                 test_socks5_server.cpp 
                 socks5_server.cpp 
                 socks5_client.cpp
-                ../../src/co_env.cpp 
-                ../../src/co_env.S
-                ../../src/connection.cpp 
-                ../../src/co_event_manager.cpp
                 ../utils/log.cpp)
+target_link_libraries(socks5_server co_cpp)
