@@ -1,0 +1,14 @@
+.. _exhale_function_co__env_8cpp_1af259982e38f43526fd0bf7d3e782c906:
+
+Function erase_if(std::set<co_thread \*>&, std::function<bool(co_thread \*)>)
+=============================================================================
+
+- Defined in :ref:`file_src_co_env.cpp`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: erase_if(std::set<co_thread *>&, std::function<bool(co_thread *)>)
+   :project: co_cpp

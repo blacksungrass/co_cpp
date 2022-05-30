@@ -1,0 +1,17 @@
+.. _exhale_class_classevent__info__node:
+
+Class event_info_node
+=====================
+
+- Defined in :ref:`file_src_co_event_manager.cpp`
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: event_info_node
+   :project: co_cpp
+   :members:
+   :protected-members:
+   :undoc-members:

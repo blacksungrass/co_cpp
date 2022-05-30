@@ -1,0 +1,55 @@
+
+.. _file_src_co_event_manager.cpp:
+
+File co_event_manager.cpp
+=========================
+
+|exhale_lsh| :ref:`Parent directory <dir_src>` (``src``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. contents:: Contents
+   :local:
+   :backlinks: none
+
+Definition (``src/co_event_manager.cpp``)
+-----------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_src_co_event_manager.cpp.rst
+
+
+
+
+
+Includes
+--------
+
+
+- ``algorithm``
+
+- ``co_env.h`` (:ref:`file_src_co_env.h`)
+
+- ``co_event_manager.h`` (:ref:`file_src_co_event_manager.h`)
+
+
+
+
+
+
+Classes
+-------
+
+
+- :ref:`exhale_class_classevent__info__node`
+
+
+Functions
+---------
+
+
+- :ref:`exhale_function_co__event__manager_8cpp_1a6346e80940b4b02cb6430944a4ab869c`
+

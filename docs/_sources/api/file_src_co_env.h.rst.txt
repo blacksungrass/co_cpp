@@ -1,0 +1,79 @@
+
+.. _file_src_co_env.h:
+
+File co_env.h
+=============
+
+|exhale_lsh| :ref:`Parent directory <dir_src>` (``src``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. contents:: Contents
+   :local:
+   :backlinks: none
+
+Definition (``src/co_env.h``)
+-----------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_src_co_env.h.rst
+
+
+
+
+
+Includes
+--------
+
+
+- ``co_event_manager.h`` (:ref:`file_src_co_event_manager.h`)
+
+- ``cstdlib``
+
+- ``exception``
+
+- ``log.h``
+
+- ``map``
+
+- ``memory``
+
+- ``set``
+
+- ``sys/epoll.h``
+
+- ``sys/timerfd.h``
+
+- ``vector``
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_src_co_env.cpp`
+
+- :ref:`file_src_co_event_manager.cpp`
+
+- :ref:`file_src_connection.h`
+
+
+
+
+Classes
+-------
+
+
+- :ref:`exhale_class_classco__env`
+
+
+Typedefs
+--------
+
+
+- :ref:`exhale_typedef_co__env_8h_1a8e62633adf5fa355676a56debe6b5266`
+

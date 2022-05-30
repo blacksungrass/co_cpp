@@ -179,8 +179,10 @@ static void erase_if(std::set<co_thread*>& set, std::function<bool(co_thread*)> 
     }
 }
 
+/*
+移除已经取消了的任务(co_thread)
+*/
 void co_env::remove_canceled_task(){
-    
     erase_if(block_list,[&](co_thread* p)->bool{
         if(cancel_list.count(p)){
             remove_co_thread(p);

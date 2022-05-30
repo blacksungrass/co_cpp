@@ -1,0 +1,17 @@
+.. _exhale_class_classco__event__manager:
+
+Class co_event_manager
+======================
+
+- Defined in :ref:`file_src_co_event_manager.h`
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: co_event_manager
+   :project: co_cpp
+   :members:
+   :protected-members:
+   :undoc-members:

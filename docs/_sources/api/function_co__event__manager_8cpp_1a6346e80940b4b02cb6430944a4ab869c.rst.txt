@@ -1,0 +1,14 @@
+.. _exhale_function_co__event__manager_8cpp_1a6346e80940b4b02cb6430944a4ab869c:
+
+Function erase_if(std::set<event_info_node \*>&, std::function<bool(event_info_node \*)>)
+=========================================================================================
+
+- Defined in :ref:`file_src_co_event_manager.cpp`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: erase_if(std::set<event_info_node *>&, std::function<bool(event_info_node *)>)
+   :project: co_cpp

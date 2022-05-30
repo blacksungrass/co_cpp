@@ -6,14 +6,22 @@
 Welcome to co_cpp's documentation!
 ==================================
 
+design
+------
+相比于asio的繁重,co_cpp支持只需要引入几个文件,就可以轻松实现cpp的协程网络编程
+目前已经提供了echo_server和socks5_server的例程,后续会提供http_server的例程
+可以看到使用了协程后,不需要用各种变量去处理协议的状态转变，用同步代码的逻辑也能达到相当好的性能表现
+性能的benchmark会在后续完成并与基于非协程的方式进行对比
+
+
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
 
+   api/library_root
 
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`

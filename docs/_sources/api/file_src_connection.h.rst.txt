@@ -1,0 +1,58 @@
+
+.. _file_src_connection.h:
+
+File connection.h
+=================
+
+|exhale_lsh| :ref:`Parent directory <dir_src>` (``src``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. contents:: Contents
+   :local:
+   :backlinks: none
+
+Definition (``src/connection.h``)
+---------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_src_connection.h.rst
+
+
+
+
+
+Includes
+--------
+
+
+- ``co_env.h`` (:ref:`file_src_co_env.h`)
+
+- ``errno.h``
+
+- ``sys/signal.h``
+
+- ``sys/socket.h``
+
+- ``unistd.h``
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_src_connection.cpp`
+
+
+
+
+Classes
+-------
+
+
+- :ref:`exhale_class_classconnection`
+

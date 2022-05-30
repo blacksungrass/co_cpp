@@ -1,0 +1,14 @@
+.. _exhale_typedef_co__env_8h_1a8e62633adf5fa355676a56debe6b5266:
+
+Typedef co_thread_func_t
+========================
+
+- Defined in :ref:`file_src_co_env.h`
+
+
+Typedef Documentation
+---------------------
+
+
+.. doxygentypedef:: co_thread_func_t
+   :project: co_cpp

@@ -1,0 +1,17 @@
+.. _exhale_class_classconnection:
+
+Class connection
+================
+
+- Defined in :ref:`file_src_connection.h`
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: connection
+   :project: co_cpp
+   :members:
+   :protected-members:
+   :undoc-members:

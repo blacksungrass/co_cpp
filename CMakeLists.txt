@@ -10,7 +10,7 @@ include_directories(examples/utils/)
 
 
 add_library(co_cpp
-            STATIC
+            SHARED
             src/co_env.cpp 
             src/co_env.S
             src/co_event_manager.cpp 

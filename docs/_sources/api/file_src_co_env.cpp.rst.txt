@@ -1,0 +1,48 @@
+
+.. _file_src_co_env.cpp:
+
+File co_env.cpp
+===============
+
+|exhale_lsh| :ref:`Parent directory <dir_src>` (``src``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. contents:: Contents
+   :local:
+   :backlinks: none
+
+Definition (``src/co_env.cpp``)
+-------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_src_co_env.cpp.rst
+
+
+
+
+
+Includes
+--------
+
+
+- ``algorithm``
+
+- ``co_env.h`` (:ref:`file_src_co_env.h`)
+
+- ``functional``
+
+
+
+
+
+
+Functions
+---------
+
+
+- :ref:`exhale_function_co__env_8cpp_1af259982e38f43526fd0bf7d3e782c906`
+

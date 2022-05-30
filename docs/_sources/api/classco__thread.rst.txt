@@ -1,0 +1,17 @@
+.. _exhale_class_classco__thread:
+
+Class co_thread
+===============
+
+- Defined in :ref:`file_src_co_thread.h`
+
+
+Class Documentation
+-------------------
+
+
+.. doxygenclass:: co_thread
+   :project: co_cpp
+   :members:
+   :protected-members:
+   :undoc-members:

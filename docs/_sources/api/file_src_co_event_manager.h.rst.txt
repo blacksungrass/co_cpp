@@ -1,0 +1,62 @@
+
+.. _file_src_co_event_manager.h:
+
+File co_event_manager.h
+=======================
+
+|exhale_lsh| :ref:`Parent directory <dir_src>` (``src``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. contents:: Contents
+   :local:
+   :backlinks: none
+
+Definition (``src/co_event_manager.h``)
+---------------------------------------
+
+
+.. toctree::
+   :maxdepth: 1
+
+   program_listing_file_src_co_event_manager.h.rst
+
+
+
+
+
+Includes
+--------
+
+
+- ``co_thread.h`` (:ref:`file_src_co_thread.h`)
+
+- ``functional``
+
+- ``map``
+
+- ``set``
+
+- ``sys/epoll.h``
+
+- ``vector``
+
+
+
+Included By
+-----------
+
+
+- :ref:`file_src_co_env.h`
+
+- :ref:`file_src_co_event_manager.cpp`
+
+
+
+
+Classes
+-------
+
+
+- :ref:`exhale_class_classco__event__manager`
+

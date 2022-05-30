@@ -1,0 +1,37 @@
+
+.. _program_listing_file_src_connection.h:
+
+Program Listing for File connection.h
+=====================================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_src_connection.h>` (``src/connection.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   #pragma once
+   #include "co_env.h"
+   #include <unistd.h>
+   #include <sys/socket.h>
+   #include <errno.h>
+   #include <sys/signal.h>
+   
+   class connection{
+   private:
+       int m_fd;//need to be non-blocking
+       co_thread& m_thread;
+       sighandler_t m_old_sighandler;//save old sighandler ,reset signal to ignore SIGPIPE
+   public:
+       connection(int socket, co_thread& t);
+       
+       int read_n_bytes(int n, char* buf, int timeout=0);
+   
+       int read_some(char* buf, int maxnum, int timeout=0);
+   
+       int write(char* buf, int n, int timeout=0);
+   
+       bool connect(sockaddr* addr, socklen_t len, int timeout=0);
+   
+       ~connection();
+   };
