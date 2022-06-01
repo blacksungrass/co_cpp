@@ -62,20 +62,34 @@
     <span class="n">std</span><span class="o">::</span><span class="n">set</span><span class="o">&lt;</span><span class="n">co_thread</span><span class="o">*&gt;</span> <span class="n">cancel_list</span><span class="p">,</span><span class="n">add_list</span><span class="p">;</span>
     <span class="n">co_event_manager</span> <span class="n">m_event_manager</span><span class="p">;</span>
     <span class="n">std</span><span class="o">::</span><span class="n">set</span><span class="o">&lt;</span><span class="n">co_thread</span><span class="o">*&gt;</span> <span class="n">valid_cothreads</span><span class="p">;</span>
-    <span class="n">std</span><span class="o">::</span><span class="n">map</span><span class="o">&lt;</span><span class="n">co_thread</span><span class="o">*</span><span class="p">,</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">long</span><span class="o">&gt;&gt;</span> <span class="n">co_thread_events</span><span class="p">;</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">map</span><span class="o">&lt;</span><span class="n">co_thread</span><span class="o">*</span><span class="p">,</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">co_thread_fd</span><span class="p">;</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">map</span><span class="o">&lt;</span><span class="n">co_thread</span><span class="o">*</span><span class="p">,</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">co_thread_event</span><span class="p">;</span>
 
     <span class="kt">void</span> <span class="nf">remove_canceled_task</span><span class="p">();</span>
-    <span class="kt">void</span> <span class="nf">handle_activated_cothread</span><span class="p">(</span><span class="n">co_thread</span><span class="o">*</span><span class="p">);</span>
+    <span class="kt">void</span> <span class="nf">handle_activated_cothread</span><span class="p">(</span><span class="n">co_thread</span><span class="o">*</span><span class="p">,</span><span class="kt">int</span><span class="p">,</span><span class="kt">int</span><span class="p">);</span>
     <span class="kt">void</span> <span class="nf">process_rd_list</span><span class="p">();</span>
     <span class="kt">void</span> <span class="nf">remove_co_thread</span><span class="p">(</span><span class="n">co_thread</span><span class="o">*</span><span class="p">);</span>
 <span class="k">public</span><span class="o">:</span>
+    <span class="c1">//constructor</span>
     <span class="n">co_env</span><span class="p">();</span>
+
     <span class="c1">//add task and return a task id</span>
     <span class="kt">long</span> <span class="nf">add_task</span><span class="p">(</span><span class="n">co_thread_func_t</span><span class="p">,</span><span class="kt">void</span><span class="o">*</span><span class="p">);</span>
+
+    <span class="c1">//register a event</span>
+    <span class="c1">//when event triggered, the co_thread will move from block_list ot rd_list</span>
     <span class="kt">long</span> <span class="nf">register_event</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span><span class="kt">int</span> <span class="n">event</span><span class="p">,</span><span class="n">co_thread</span><span class="o">*</span> <span class="n">thread_ptr</span><span class="p">);</span>
+
+    <span class="c1">//do event loop</span>
     <span class="kt">void</span> <span class="nf">loop</span><span class="p">();</span>
+
+    <span class="c1">//cancel task by task_id return by add_task</span>
     <span class="kt">void</span> <span class="nf">cancel_task</span><span class="p">(</span><span class="kt">long</span><span class="p">);</span>
+
+    <span class="c1">//cacel event by event_id return by register_event</span>
     <span class="kt">void</span> <span class="nf">cancel_event</span><span class="p">(</span><span class="kt">long</span><span class="p">);</span>
+
+    <span class="kt">void</span> <span class="nf">cancel_event</span><span class="p">(</span><span class="n">co_thread</span><span class="o">*</span><span class="p">);</span>
 <span class="p">};</span>
 </pre></div>
 </div>

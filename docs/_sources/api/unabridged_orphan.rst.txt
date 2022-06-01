@@ -40,6 +40,11 @@ Files
 .. toctree::
    :maxdepth: 5
 
+   file_src_co_thread.cpp.rst
+
+.. toctree::
+   :maxdepth: 5
+
    file_src_co_thread.h.rst
 
 .. toctree::

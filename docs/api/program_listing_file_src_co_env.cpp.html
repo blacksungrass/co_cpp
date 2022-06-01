@@ -40,89 +40,16 @@
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&quot;co_env.h&quot;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;algorithm&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;functional&gt;</span><span class="cp"></span>
-<span class="cm">/*</span>
-<span class="cm">* x86-64 calling convention refer https://aaronbloomfield.github.io/pdr/book/x86-64bit-ccc-chapter.pdf</span>
-<span class="cm">* caller need to save r10,r11 and parameters(rdi,rsi,rdx,rcx,r8,r9)</span>
-<span class="cm">*/</span>
+<span class="cp">#include</span> <span class="cpf">&quot;co_thread.h&quot;</span><span class="cp"></span>
 
 
-<span class="n">co_thread</span><span class="o">::</span><span class="n">co_thread</span><span class="p">(</span><span class="n">co_thread_func_t</span> <span class="n">func</span><span class="p">,</span><span class="kt">void</span><span class="o">*</span> <span class="n">args</span><span class="p">,</span><span class="n">co_env</span><span class="o">*</span> <span class="n">env_p</span><span class="p">){</span>
-    <span class="n">m_env</span> <span class="o">=</span> <span class="n">env_p</span><span class="p">;</span>
-    <span class="k">const</span> <span class="kt">long</span> <span class="n">stack_size</span> <span class="o">=</span> <span class="mi">1024</span><span class="p">;</span><span class="c1">//todo stack size could be a constructor parameter</span>
-    <span class="n">finished</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
-
-    <span class="n">m_addr</span> <span class="o">=</span> <span class="p">(</span><span class="kt">long</span><span class="o">*</span><span class="p">)</span><span class="n">malloc</span><span class="p">(</span><span class="n">stack_size</span><span class="o">*</span><span class="k">sizeof</span><span class="p">(</span><span class="kt">long</span><span class="p">));</span>
-    <span class="n">m_local_state</span> <span class="o">=</span> <span class="p">(</span><span class="kt">long</span><span class="o">*</span><span class="p">)</span><span class="n">malloc</span><span class="p">(</span><span class="mi">12</span><span class="o">*</span><span class="k">sizeof</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">));</span>
-
-    <span class="kt">long</span> <span class="n">ret_addr_idx</span> <span class="o">=</span> <span class="n">stack_size</span><span class="mi">-8</span><span class="p">;</span>
-    <span class="k">if</span><span class="p">((</span><span class="kt">long</span><span class="p">)(</span><span class="n">m_addr</span><span class="o">+</span><span class="n">ret_addr_idx</span><span class="p">)</span><span class="o">%</span><span class="mi">16</span><span class="o">!=</span><span class="mi">0</span><span class="p">){</span>
-        <span class="n">ret_addr_idx</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span>
-    <span class="p">}</span>
-
-    <span class="n">m_addr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="kt">long</span><span class="p">)</span><span class="n">func</span><span class="p">;</span><span class="c1">//rip</span>
-    <span class="n">m_addr</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="kt">long</span><span class="p">)(</span><span class="n">m_addr</span><span class="o">+</span><span class="n">ret_addr_idx</span><span class="p">);</span><span class="c1">//rsp</span>
-    <span class="n">m_addr</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="kt">long</span><span class="p">)(</span><span class="n">m_addr</span><span class="o">+</span><span class="n">ret_addr_idx</span><span class="p">);</span><span class="c1">//rbp</span>
-    <span class="n">m_addr</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="kt">long</span><span class="p">)(</span><span class="k">this</span><span class="p">);</span><span class="c1">//rdi(first param)</span>
-    <span class="n">m_addr</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="kt">long</span><span class="p">)(</span><span class="n">args</span><span class="p">);</span><span class="c1">//rsi(seocnd param)</span>
-    <span class="n">m_addr</span><span class="p">[</span><span class="n">ret_addr_idx</span><span class="o">+</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="kt">long</span><span class="p">)</span><span class="k">this</span><span class="p">;</span>
-    <span class="n">m_addr</span><span class="p">[</span><span class="n">ret_addr_idx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="kt">long</span><span class="p">)</span><span class="o">&amp;</span><span class="n">finish</span><span class="p">;</span>
-    <span class="n">m_addr</span><span class="p">[</span><span class="n">ret_addr_idx</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="kt">long</span><span class="p">)</span><span class="n">func</span><span class="p">;</span>
+<span class="k">static</span> <span class="kt">long</span> <span class="nf">make_event_and_fd</span><span class="p">(</span><span class="kt">int</span> <span class="n">event</span><span class="p">,</span><span class="kt">int</span> <span class="n">fd</span><span class="p">){</span>
+    <span class="kt">long</span> <span class="n">ret</span><span class="p">;</span>
+    <span class="kt">long</span> <span class="n">levent</span> <span class="o">=</span> <span class="n">event</span><span class="p">;</span>
+    <span class="kt">long</span> <span class="n">lfd</span> <span class="o">=</span> <span class="n">fd</span><span class="p">;</span>
+    <span class="n">ret</span> <span class="o">=</span> <span class="p">(</span><span class="n">levent</span><span class="o">&lt;&lt;</span><span class="mi">32</span><span class="p">)</span><span class="o">+</span><span class="n">lfd</span><span class="p">;</span>
+    <span class="k">return</span> <span class="n">ret</span><span class="p">;</span>
 <span class="p">}</span>
-
-<span class="kt">int</span> <span class="n">co_thread</span><span class="o">::</span><span class="n">run_impl</span><span class="p">(){</span>
-    <span class="k">if</span><span class="p">(</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">finished</span><span class="p">){</span>
-        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-<span class="p">}</span>
-
-<span class="kt">void</span> <span class="n">co_thread</span><span class="o">::</span><span class="n">yield_impl</span><span class="p">(){</span>
-
-<span class="p">}</span>
-
-<span class="kt">void</span> <span class="n">co_thread</span><span class="o">::</span><span class="n">yield_event_impl</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span><span class="kt">int</span> <span class="n">event</span><span class="p">){</span>
-    <span class="k">if</span><span class="p">(</span><span class="n">m_env</span><span class="o">==</span><span class="k">nullptr</span><span class="p">){</span>
-        <span class="k">throw</span> <span class="n">std</span><span class="o">::</span><span class="n">runtime_error</span><span class="p">(</span><span class="s">&quot;co_thread need a co_env to to yield for some event&quot;</span><span class="p">);</span>
-    <span class="p">}</span>
-    <span class="n">m_env</span><span class="o">-&gt;</span><span class="n">register_event</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="n">event</span><span class="p">,</span><span class="k">this</span><span class="p">);</span>
-<span class="p">}</span>
-
-<span class="kt">void</span> <span class="n">co_thread</span><span class="o">::</span><span class="n">yield_events_impl</span><span class="p">(</span><span class="kt">int</span> <span class="n">fds</span><span class="p">[],</span><span class="kt">int</span> <span class="n">events</span><span class="p">[],</span><span class="kt">int</span> <span class="n">n</span><span class="p">){</span>
-    <span class="k">if</span><span class="p">(</span><span class="n">m_env</span><span class="o">==</span><span class="k">nullptr</span><span class="p">){</span>
-        <span class="k">throw</span> <span class="n">std</span><span class="o">::</span><span class="n">runtime_error</span><span class="p">(</span><span class="s">&quot;co_thread need a co_env to to yield for some event&quot;</span><span class="p">);</span>
-    <span class="p">}</span>
-    <span class="k">for</span><span class="p">(</span><span class="kt">int</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="n">i</span><span class="o">&lt;</span><span class="n">n</span><span class="p">;</span><span class="o">++</span><span class="n">i</span><span class="p">){</span>
-        <span class="n">m_env</span><span class="o">-&gt;</span><span class="n">register_event</span><span class="p">(</span><span class="n">fds</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">events</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="k">this</span><span class="p">);</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-
-<span class="kt">void</span> <span class="n">co_thread</span><span class="o">::</span><span class="n">yield_for_impl</span><span class="p">(</span><span class="kt">int</span> <span class="n">ms</span><span class="p">){</span>
-    <span class="k">if</span><span class="p">(</span><span class="n">m_env</span><span class="o">==</span><span class="k">nullptr</span><span class="p">){</span>
-        <span class="k">throw</span> <span class="n">std</span><span class="o">::</span><span class="n">runtime_error</span><span class="p">(</span><span class="s">&quot;co_thread need a co_env to to yield_for some time&quot;</span><span class="p">);</span>
-    <span class="p">}</span>
-    <span class="kt">int</span> <span class="n">fd</span> <span class="o">=</span> <span class="n">timerfd_create</span><span class="p">(</span><span class="n">CLOCK_MONOTONIC</span><span class="p">,</span><span class="mi">0</span><span class="p">);</span>
-    <span class="k">struct</span> <span class="nc">itimerspec</span> <span class="n">value</span><span class="p">{</span><span class="mi">0</span><span class="p">};</span>
-    <span class="n">value</span><span class="p">.</span><span class="n">it_value</span><span class="p">.</span><span class="n">tv_sec</span> <span class="o">=</span> <span class="n">ms</span><span class="o">/</span><span class="mi">1000</span><span class="p">;</span>
-    <span class="n">ms</span> <span class="o">%=</span> <span class="mi">1000</span><span class="p">;</span>
-    <span class="n">value</span><span class="p">.</span><span class="n">it_value</span><span class="p">.</span><span class="n">tv_nsec</span> <span class="o">=</span> <span class="n">ms</span><span class="o">*</span><span class="mi">1000</span><span class="o">*</span><span class="mi">1000</span><span class="p">;</span>
-    <span class="k">if</span><span class="p">(</span><span class="n">value</span><span class="p">.</span><span class="n">it_value</span><span class="p">.</span><span class="n">tv_sec</span><span class="o">==</span><span class="mi">0</span><span class="o">&amp;&amp;</span><span class="n">value</span><span class="p">.</span><span class="n">it_value</span><span class="p">.</span><span class="n">tv_nsec</span><span class="o">==</span><span class="mi">0</span><span class="p">){</span>
-        <span class="n">value</span><span class="p">.</span><span class="n">it_value</span><span class="p">.</span><span class="n">tv_nsec</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="n">timerfd_settime</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="o">&amp;</span><span class="n">value</span><span class="p">,</span><span class="k">nullptr</span><span class="p">);</span>
-    <span class="k">if</span><span class="p">(</span><span class="n">m_env</span><span class="o">!=</span><span class="k">nullptr</span><span class="p">)</span>
-        <span class="n">m_env</span><span class="o">-&gt;</span><span class="n">register_event</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="n">EPOLLIN</span><span class="p">,</span><span class="k">this</span><span class="p">);</span>
-<span class="p">}</span>
-
-<span class="n">co_thread</span><span class="o">::~</span><span class="n">co_thread</span><span class="p">(){</span>
-    <span class="k">if</span><span class="p">(</span><span class="n">m_addr</span><span class="o">!=</span><span class="k">nullptr</span><span class="p">){</span>
-        <span class="n">free</span><span class="p">(</span><span class="n">m_addr</span><span class="p">);</span>
-    <span class="p">}</span>
-    <span class="k">if</span><span class="p">(</span><span class="n">m_local_state</span><span class="o">!=</span><span class="k">nullptr</span><span class="p">){</span>
-        <span class="n">free</span><span class="p">(</span><span class="n">m_local_state</span><span class="p">);</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-
-
 
 <span class="n">co_env</span><span class="o">::</span><span class="n">co_env</span><span class="p">(){</span>
 <span class="p">}</span>
@@ -144,11 +71,11 @@
 
 <span class="kt">long</span> <span class="n">co_env</span><span class="o">::</span><span class="n">register_event</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span><span class="kt">int</span> <span class="n">event</span><span class="p">,</span><span class="n">co_thread</span><span class="o">*</span> <span class="n">thread_ptr</span><span class="p">){</span>
     <span class="kt">long</span> <span class="n">event_id</span> <span class="o">=</span> <span class="n">m_event_manager</span><span class="p">.</span><span class="n">add_event</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="n">event</span><span class="p">,</span><span class="n">thread_ptr</span><span class="p">);</span>
-    <span class="c1">//co_thread_events[thread_ptr].emplace_back(event_id);</span>
     <span class="k">return</span> <span class="n">event_id</span><span class="p">;</span>
 <span class="p">}</span>
 
-<span class="kt">void</span> <span class="n">co_env</span><span class="o">::</span><span class="n">handle_activated_cothread</span><span class="p">(</span><span class="n">co_thread</span><span class="o">*</span> <span class="n">p</span><span class="p">){</span>
+<span class="kt">void</span> <span class="n">co_env</span><span class="o">::</span><span class="n">handle_activated_cothread</span><span class="p">(</span><span class="n">co_thread</span><span class="o">*</span> <span class="n">p</span><span class="p">,</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">int</span> <span class="n">event</span><span class="p">){</span>
+    <span class="c1">//how to handle EPOLLERR and EPOLLHUB?</span>
     <span class="k">if</span><span class="p">(</span><span class="n">block_list</span><span class="p">.</span><span class="n">count</span><span class="p">(</span><span class="n">p</span><span class="p">)){</span>
         <span class="n">block_list</span><span class="p">.</span><span class="n">erase</span><span class="p">(</span><span class="n">p</span><span class="p">);</span>
         <span class="n">rd_list</span><span class="p">.</span><span class="n">insert</span><span class="p">(</span><span class="n">p</span><span class="p">);</span>
@@ -163,7 +90,11 @@
             <span class="n">it</span> <span class="o">=</span> <span class="n">rd_list</span><span class="p">.</span><span class="n">erase</span><span class="p">(</span><span class="n">it</span><span class="p">);</span>
             <span class="k">continue</span><span class="p">;</span>
         <span class="p">}</span>
-        <span class="kt">int</span> <span class="n">val</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">it</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">run</span><span class="p">();</span><span class="c1">//run co_thread</span>
+        <span class="kt">int</span> <span class="n">fd</span> <span class="o">=</span> <span class="n">co_thread_fd</span><span class="p">[</span><span class="o">*</span><span class="n">it</span><span class="p">];</span>
+        <span class="kt">int</span> <span class="n">event</span> <span class="o">=</span> <span class="n">co_thread_event</span><span class="p">[</span><span class="o">*</span><span class="n">it</span><span class="p">];</span>
+        <span class="kt">long</span> <span class="n">event_and_fd</span> <span class="o">=</span> <span class="n">make_event_and_fd</span><span class="p">(</span><span class="n">event</span><span class="p">,</span><span class="n">fd</span><span class="p">);</span>
+        <span class="c1">//printf(&quot;event_and_fd:%lld event:%d fd:%d\n&quot;,event_and_fd,event,fd);</span>
+        <span class="kt">int</span> <span class="n">val</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">it</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">run</span><span class="p">(</span><span class="n">event_and_fd</span><span class="p">);</span><span class="c1">//run co_thread</span>
 
         <span class="k">if</span><span class="p">(</span><span class="n">val</span><span class="o">==</span><span class="mi">1</span><span class="p">){</span><span class="c1">//if finished</span>
             <span class="n">remove_co_thread</span><span class="p">(</span><span class="o">*</span><span class="n">it</span><span class="p">);</span>
@@ -190,12 +121,15 @@
             <span class="n">sleep_time</span> <span class="o">=</span> <span class="mi">-1</span><span class="p">;</span>
         <span class="p">}</span>
         <span class="c1">//printf(&quot;rd_list_len=%d\tblock_list_len=%d\n&quot;,rd_list.size(),block_list.size());</span>
-        <span class="n">m_event_manager</span><span class="p">.</span><span class="n">handle_event</span><span class="p">([</span><span class="k">this</span><span class="p">](</span><span class="n">co_thread</span><span class="o">*</span> <span class="n">p</span><span class="p">){</span>
-            <span class="k">this</span><span class="o">-&gt;</span><span class="n">handle_activated_cothread</span><span class="p">(</span><span class="n">p</span><span class="p">);</span>
+        <span class="n">m_event_manager</span><span class="p">.</span><span class="n">handle_event</span><span class="p">([</span><span class="k">this</span><span class="p">](</span><span class="n">co_thread</span><span class="o">*</span> <span class="n">p</span><span class="p">,</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">int</span> <span class="n">event</span><span class="p">){</span>
+            <span class="k">this</span><span class="o">-&gt;</span><span class="n">handle_activated_cothread</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="n">fd</span><span class="p">,</span><span class="n">event</span><span class="p">);</span>
+            <span class="n">co_thread_fd</span><span class="p">.</span><span class="n">emplace</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="n">fd</span><span class="p">);</span>
+            <span class="n">co_thread_event</span><span class="p">.</span><span class="n">emplace</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="n">event</span><span class="p">);</span>
         <span class="p">},</span><span class="n">sleep_time</span><span class="p">);</span>
-        <span class="c1">//printf(&quot;event num got from epoll:%d\n&quot;,num);</span>
 
         <span class="n">process_rd_list</span><span class="p">();</span>
+        <span class="n">co_thread_fd</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span>
+        <span class="n">co_thread_event</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span>
 
         <span class="c1">//append add_list</span>
         <span class="n">rd_list</span><span class="p">.</span><span class="n">insert</span><span class="p">(</span><span class="n">add_list</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="n">add_list</span><span class="p">.</span><span class="n">end</span><span class="p">());</span>
@@ -252,6 +186,12 @@
 
 <span class="kt">void</span> <span class="n">co_env</span><span class="o">::</span><span class="n">cancel_event</span><span class="p">(</span><span class="kt">long</span> <span class="n">event_id</span><span class="p">){</span>
     <span class="n">m_event_manager</span><span class="p">.</span><span class="n">cancel_event</span><span class="p">(</span><span class="n">event_id</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="n">co_env</span><span class="o">::</span><span class="n">cancel_event</span><span class="p">(</span><span class="n">co_thread</span><span class="o">*</span> <span class="kr">thread</span><span class="p">){</span>
+    <span class="k">if</span><span class="p">(</span><span class="n">valid_cothreads</span><span class="p">.</span><span class="n">count</span><span class="p">(</span><span class="kr">thread</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span><span class="p">;</span>
+    <span class="n">m_event_manager</span><span class="p">.</span><span class="n">cancel_co_thread</span><span class="p">(</span><span class="kr">thread</span><span class="p">);</span>
 <span class="p">}</span>
 </pre></div>
 </div>

@@ -59,6 +59,8 @@ Included By
 
 - :ref:`file_src_co_event_manager.cpp`
 
+- :ref:`file_src_co_thread.cpp`
+
 - :ref:`file_src_connection.h`
 
 

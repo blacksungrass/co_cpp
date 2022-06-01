@@ -60,11 +60,20 @@
     <span class="kt">void</span> <span class="nf">add_node</span><span class="p">(</span><span class="n">event_info_node</span><span class="o">*</span><span class="p">);</span>
     <span class="kt">void</span> <span class="nf">del_node</span><span class="p">(</span><span class="n">event_info_node</span><span class="o">*</span><span class="p">);</span>
 <span class="k">public</span><span class="o">:</span>
+    <span class="c1">//constructor</span>
     <span class="n">co_event_manager</span><span class="p">();</span>
+
+    <span class="c1">//add a event and return event_id</span>
     <span class="kt">long</span> <span class="nf">add_event</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">int</span> <span class="n">event</span><span class="p">,</span> <span class="n">co_thread</span><span class="o">*</span> <span class="n">ptr</span><span class="p">);</span>
+
+    <span class="c1">//cancel a event by event_id returned by add_event</span>
     <span class="kt">void</span> <span class="nf">cancel_event</span><span class="p">(</span><span class="kt">long</span><span class="p">);</span>
+
+    <span class="c1">//cancel a co_thread&#39;s all event</span>
     <span class="kt">void</span> <span class="nf">cancel_co_thread</span><span class="p">(</span><span class="n">co_thread</span><span class="o">*</span><span class="p">);</span>
-    <span class="kt">void</span> <span class="nf">handle_event</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">(</span><span class="n">co_thread</span><span class="o">*</span><span class="p">)</span><span class="o">&gt;</span> <span class="n">func</span><span class="p">,</span><span class="kt">int</span> <span class="n">timeout</span><span class="p">);</span>
+
+    <span class="c1">//handel events</span>
+    <span class="kt">void</span> <span class="nf">handle_event</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">(</span><span class="n">co_thread</span><span class="o">*</span><span class="p">,</span><span class="kt">int</span><span class="p">,</span><span class="kt">int</span><span class="p">)</span><span class="o">&gt;</span> <span class="n">func</span><span class="p">,</span><span class="kt">int</span> <span class="n">timeout</span><span class="p">);</span>
 <span class="p">};</span>
 </pre></div>
 </div>

@@ -1,0 +1,14 @@
+.. _exhale_function_connection_8cpp_1a786a83141a00d9c507aca7eea3a0d9ff:
+
+Function create_timer_fd
+========================
+
+- Defined in :ref:`file_src_connection.cpp`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: create_timer_fd(int)
+   :project: co_cpp

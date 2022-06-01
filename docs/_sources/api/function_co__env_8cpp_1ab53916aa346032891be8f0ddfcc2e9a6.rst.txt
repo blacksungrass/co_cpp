@@ -1,0 +1,14 @@
+.. _exhale_function_co__env_8cpp_1ab53916aa346032891be8f0ddfcc2e9a6:
+
+Function make_event_and_fd
+==========================
+
+- Defined in :ref:`file_src_co_env.cpp`
+
+
+Function Documentation
+----------------------
+
+
+.. doxygenfunction:: make_event_and_fd(int, int)
+   :project: co_cpp

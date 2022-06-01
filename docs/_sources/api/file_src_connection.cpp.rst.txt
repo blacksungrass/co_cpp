@@ -31,7 +31,22 @@ Includes
 
 - ``connection.h`` (:ref:`file_src_connection.h`)
 
+- ``exception``
+
+- ``fcntl.h``
+
+- ``sys/timerfd.h``
 
 
 
+
+
+
+Functions
+---------
+
+
+- :ref:`exhale_function_connection_8cpp_1a786a83141a00d9c507aca7eea3a0d9ff`
+
+- :ref:`exhale_function_connection_8cpp_1a3b70cbfb952774698477425e4c30c4c3`
 
