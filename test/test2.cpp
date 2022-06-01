@@ -32,7 +32,7 @@ void func2(co_thread& t,void* args){
     connection conn(fd,t);
     for(int i=0;i<10;++i){
         t.yield_event(fd,EPOLLOUT);
-        conn.write((char*)&i,sizeof(int),0);
+        conn.write_some((char*)&i,sizeof(int),0);
     }
     close(fd);
 }
@@ -43,8 +43,8 @@ int main(){
     make_non_blocking(fds[0]);
     make_non_blocking(fds[1]);
     co_env env;
-    env.add_task(func1,(void*)fds);
     env.add_task(func2,(void*)fds);
+    env.add_task(func1,(void*)fds);
     env.loop();
     if(res.size()!=10){
         return 1;//error

@@ -21,9 +21,18 @@ private:
     void add_node(event_info_node*);
     void del_node(event_info_node*);
 public:
+    //constructor
     co_event_manager();
+
+    //add a event and return event_id
     long add_event(int fd, int event, co_thread* ptr);
+
+    //cancel a event by event_id returned by add_event
     void cancel_event(long);
+
+    //cancel a co_thread's all event
     void cancel_co_thread(co_thread*);
-    void handle_event(std::function<void(co_thread*,int)> func,int timeout);
+
+    //handel events
+    void handle_event(std::function<void(co_thread*,int,int)> func,int timeout);
 };

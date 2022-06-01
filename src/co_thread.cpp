@@ -76,6 +76,32 @@ void co_thread::yield_for_impl(int ms){
         m_env->register_event(fd,EPOLLIN,this);
 }
 
+void co_thread::cancel_all_event(){
+    if(m_env==nullptr)
+        return;
+    m_env->cancel_event(this);
+}
+
+long co_thread::register_event(int fd,int event){
+    if(m_env==nullptr)
+        return -1;
+    return m_env->register_event(fd,event,this);
+}
+
+void co_thread::register_events(int fds[],int events[],int n){
+    if(m_env==nullptr)
+        return;
+    for(int i=0;i<n;++i){
+        m_env->register_event(fds[i],events[i],this);
+    }
+}
+
+void co_thread::cancel_event(long event_id){
+    if(m_env==nullptr)
+        return;
+    m_env->cancel_event(event_id);
+}
+
 co_thread::~co_thread(){
     if(m_addr!=nullptr){
         free(m_addr);
@@ -84,3 +110,4 @@ co_thread::~co_thread(){
         free(m_local_state);
     }
 }
+

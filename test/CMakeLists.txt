@@ -13,3 +13,10 @@ add_test(
     NAME test2
     COMMAND $<TARGET_FILE:test2>
 )
+
+add_executable(test3 test3.cpp)
+target_link_libraries(test3 co_cpp pthread)
+add_test(
+    NAME test3
+    COMMAND $<TARGET_FILE:test3>
+)

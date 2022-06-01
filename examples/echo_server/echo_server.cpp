@@ -43,7 +43,7 @@ void echo_client::work(co_thread& t,void* args){
         if(cnt<0)
             break;
         self->m_last_activate_time = get_time_now();
-        int ret = conn.write(buf,cnt);
+        int ret = conn.write_some(buf,cnt);
         if(ret<0)
             break;
         self->m_last_activate_time = get_time_now();

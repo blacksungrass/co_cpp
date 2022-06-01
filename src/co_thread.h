@@ -23,14 +23,15 @@ private:
 public:
     co_thread(co_thread_func_t func,void* args,co_env* env_p=nullptr);
     
-    //parameter event: the event which awaked the cothread
+    //parameter event_and_fd: the event and fd which awaked the cothread
+    //event at hight 32 digits, and fd at low 32 digits
     //if start the first time, event default to 0
     //return 0:normal yield
     //return 1:finish(exited)
-    //return 2:blocked for event
-    int run(int event=0);
+    //return 2:blocked
+    int run(long event_and_fd=0);
 
-    int yield();
+    long yield(bool blocked=false);
 
     int yield_event(int fd,int event);
 
@@ -41,6 +42,14 @@ public:
     void suicide();
 
     static void finish();
+
+    void cancel_all_event();
+
+    void cancel_event(long);
+
+    long register_event(int fd,int event);
+
+    void register_events(int fds[],int events[],int n);
 
     ~co_thread();
 };

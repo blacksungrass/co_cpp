@@ -109,9 +109,10 @@ void co_event_manager::delete_event(long event_id,bool modify_fd_record,bool mod
         if(p!=node)
             events |= p->events;
     }
+   
+    auto cache_it = event_cache.find(fd);
 
-    int cache = event_cache[fd];
-    if(cache!=events){
+    if(cache_it==end(event_cache)||cache_it->second!=events){
         if(events==0){
             event_cache.erase(fd);
             epoll_ctl(epoll_fd,EPOLL_CTL_DEL,fd,nullptr);
@@ -144,14 +145,17 @@ static void erase_if(std::set<event_info_node*>& set, std::function<bool(event_i
     }
 }
 
-void co_event_manager::handle_event(std::function<void(co_thread*,int)> func,int timeout){
+void co_event_manager::handle_event(std::function<void(co_thread*,int,int)> func,int timeout){
     epoll_event events[200];
     int ret = epoll_wait(epoll_fd,events,200,timeout);
     for(int i=0;i<ret;++i){
         int fd = events[i].data.fd;
         erase_if(fd_record[fd],[&](event_info_node* node)->bool{
-            if(node->events&events[i].events){
-                func(node->thread_ptr,node->events&events[i].events);
+            int ev = EPOLLERR|EPOLLHUP;//this two event need treat specially
+            ev = ev&(events[i].events);
+            ev = ev|(node->events&events[i].events);
+            if(ev){
+                func(node->thread_ptr,fd,ev);
                 delete_event((long)node,false,true);
                 return true;
             }
@@ -159,6 +163,9 @@ void co_event_manager::handle_event(std::function<void(co_thread*,int)> func,int
                 return false;
             }
         });
+        if(fd_record[fd].empty()){
+            fd_record.erase(fd);
+        }
     }
 }
 

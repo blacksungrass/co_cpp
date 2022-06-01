@@ -1,8 +1,8 @@
-.global _ZN9co_thread3runEi                 # co_thread::run(int) done
+.global _ZN9co_thread3runEl                 # co_thread::run(long) done
 .global _ZN9co_thread6finishEv              # co_thread::finish() done
 .global _ZN9co_thread11yield_eventEii       # co_thread::yield_event(int, int) done
 .global _ZN9co_thread12yield_eventsEPiS0_i  # co_thread::yield_events(int*, int*, int)
-.global _ZN9co_thread5yieldEv               # co_thread::yield() done
+.global _ZN9co_thread5yieldEb               # co_thread::yield(bool) done
 .global _ZN9co_thread7suicideEv             # co_thread::suicide() done
 .global _ZN9co_thread9yield_forEi           # co_thread::yield_for(int) done
 
@@ -14,8 +14,8 @@
 # _ZN9co_thread8run_implEv                  co_thread::run_impl()
 
 
-#co_thread::run(int)
-_ZN9co_thread3runEi:
+#co_thread::run(long)
+_ZN9co_thread3runEl:
         #save_user_context
         mov 8(%rdi),%rax  # 把m_local_state的指针保存在rax
         mov (%rsp),%rcx   # 把rip保存到rcx
@@ -60,8 +60,8 @@ switch:
 
         ret               # ret to m_addr[0]
 
-# co_thread::yield()
-_ZN9co_thread5yieldEv:
+# co_thread::yield(bool blocked=false)
+_ZN9co_thread5yieldEb:
         #save_cothread_context
         mov (%rdi),%rax   # 把m_addr的指针保存在rax
         mov (%rsp),%rcx   # 把rip保存到rcx
@@ -80,7 +80,7 @@ _ZN9co_thread5yieldEv:
         push %rdi
         call _ZN9co_thread10yield_implEv
         pop %rdi
-
+        
         #restore_user_context
         mov 8(%rdi),%rax # 把m_local_state的指针保存在rax
         mov 72(%rax),%r15 # r15=m_local_state[9]
@@ -93,8 +93,14 @@ _ZN9co_thread5yieldEv:
         mov 16(%rax),%rbp # rbp=m_local_state[2]
         mov 8(%rax),%rsp  # rsp=m_local_state[1]
 
-        #set return value 0
-        mov $0,%eax
+        #set return value
+        mov (%rdi),%rax
+        mov 32(%rax),%rax #set blocked parameter (rsi) to rax
+        test %al,%al
+        jnz blocked
+        mov $0,%eax      #set return value 0
+        ret
+blocked:mov $2,%eax      #set return value 2
         ret
 
 # co_thread::finish()

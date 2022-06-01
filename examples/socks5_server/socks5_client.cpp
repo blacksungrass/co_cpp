@@ -75,17 +75,17 @@ bool socks5_client::handle_request(co_thread& thread){
         return false;
     if(buf[0]!=5){
         retbuf[1] = 0xff;
-        conn.write(retbuf,10);
+        conn.write_some(retbuf,10);
         return false;
     }
     if(buf[1]!=0x01){//if command is not cnnect
         retbuf[1] = 0x07;//unsupported command
-        conn.write(retbuf,10);
+        conn.write_some(retbuf,10);
         return false;
     }
     if(buf[3]!=0x01){//if addr is not ipv4
         retbuf[1] = 0x08;//unsupported addr type
-        conn.write(retbuf,10);
+        conn.write_some(retbuf,10);
         return false;
     }
     r = conn.read_n_bytes(6,buf+4);
@@ -104,11 +104,11 @@ bool socks5_client::handle_request(co_thread& thread){
     
     if(!ret){
         retbuf[1] = 0x01;
-        conn.write(retbuf,10);
+        conn.write_some(retbuf,10);
         return false;
     }
     retbuf[1] = 0x00;
-    conn.write(retbuf,10);
+    conn.write_some(retbuf,10);
     return true;
 }
 
@@ -145,12 +145,12 @@ bool socks5_client::handshake(co_thread& thread){
     if(!have_no_auth){
         buf[0] = 5;
         buf[1] = 0xff;
-        conn.write(buf,2);
+        conn.write_some(buf,2);
         return false;
     }
     buf[0] = 5;
     buf[1] = 0;
-    conn.write(buf,2);
+    conn.write_some(buf,2);
     return true;
 }
 
@@ -185,7 +185,7 @@ void socks5_client::trans_func1(co_thread& thread,void* args){
             self->close();
             return;
         }
-        r = conn2.write(buf,r);
+        r = conn2.write_some(buf,r);
         if(r<0){
             self->close();
             return;
@@ -204,7 +204,7 @@ void socks5_client::trans_func2(co_thread& thread,void* args){
             self->close();
             return;
         }
-        r = conn2.write(buf,r);
+        r = conn2.write_some(buf,r);
         if(r<0){
             self->close();
             return;

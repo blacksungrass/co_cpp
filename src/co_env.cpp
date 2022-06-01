@@ -4,6 +4,14 @@
 #include "co_thread.h"
 
 
+static long make_event_and_fd(int event,int fd){
+    long ret;
+    long levent = event;
+    long lfd = fd;
+    ret = (levent<<32)+lfd;
+    return ret;
+}
+
 co_env::co_env(){
 }
 
@@ -27,7 +35,8 @@ long co_env::register_event(int fd,int event,co_thread* thread_ptr){
     return event_id;
 }
 
-void co_env::handle_activated_cothread(co_thread* p,int event){
+void co_env::handle_activated_cothread(co_thread* p,int fd, int event){
+    //how to handle EPOLLERR and EPOLLHUB?
     if(block_list.count(p)){
         block_list.erase(p);
         rd_list.insert(p);
@@ -42,8 +51,11 @@ void co_env::process_rd_list(){
             it = rd_list.erase(it);
             continue;
         }
+        int fd = co_thread_fd[*it];
         int event = co_thread_event[*it];
-        int val = (*it)->run(event);//run co_thread
+        long event_and_fd = make_event_and_fd(event,fd);
+        //printf("event_and_fd:%lld event:%d fd:%d\n",event_and_fd,event,fd);
+        int val = (*it)->run(event_and_fd);//run co_thread
 
         if(val==1){//if finished
             remove_co_thread(*it);
@@ -70,13 +82,14 @@ void co_env::loop(){
             sleep_time = -1;
         }
         //printf("rd_list_len=%d\tblock_list_len=%d\n",rd_list.size(),block_list.size());
-        m_event_manager.handle_event([this](co_thread* p,int event){
-            this->handle_activated_cothread(p,event);
+        m_event_manager.handle_event([this](co_thread* p,int fd, int event){
+            this->handle_activated_cothread(p,fd,event);
+            co_thread_fd.emplace(p,fd);
             co_thread_event.emplace(p,event);
         },sleep_time);
-        //printf("event num got from epoll:%d\n",num);
         
         process_rd_list();
+        co_thread_fd.clear();
         co_thread_event.clear();
 
         //append add_list
@@ -134,4 +147,10 @@ void co_env::cancel_task(long task_id){
 
 void co_env::cancel_event(long event_id){
     m_event_manager.cancel_event(event_id);
+}
+
+void co_env::cancel_event(co_thread* thread){
+    if(valid_cothreads.count(thread)==0)
+        return;
+    m_event_manager.cancel_co_thread(thread);
 }
