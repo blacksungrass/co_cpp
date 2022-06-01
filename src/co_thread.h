@@ -5,7 +5,6 @@ class co_env;
 /*
 * wrap a thread whose stack is on heap
 * when it calls yeild, control flow will redirect into run function
-* https://img-blog.csdn.net/20170510234951419?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvcXFfMTgyMTgzMzU=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center
 */
 class co_thread{
 private:
@@ -24,16 +23,20 @@ private:
 public:
     co_thread(co_thread_func_t func,void* args,co_env* env_p=nullptr);
     
-    //terminated or not
-    int run();
+    //parameter event: the event which awaked the cothread
+    //if start the first time, event default to 0
+    //return 0:normal yield
+    //return 1:finish(exited)
+    //return 2:blocked for event
+    int run(int event=0);
 
-    void yield();
+    int yield();
 
-    void yield_event(int fd,int event);
+    int yield_event(int fd,int event);
 
-    void yield_events(int fds[],int events[],int n);
+    int yield_events(int fds[],int events[],int n);
     
-    void yield_for(int ms);
+    int yield_for(int ms);
 
     void suicide();
 

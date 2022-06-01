@@ -1,4 +1,4 @@
-.global _ZN9co_thread3runEv                 # co_thread::run() done
+.global _ZN9co_thread3runEi                 # co_thread::run(int) done
 .global _ZN9co_thread6finishEv              # co_thread::finish() done
 .global _ZN9co_thread11yield_eventEii       # co_thread::yield_event(int, int) done
 .global _ZN9co_thread12yield_eventsEPiS0_i  # co_thread::yield_events(int*, int*, int)
@@ -14,8 +14,8 @@
 # _ZN9co_thread8run_implEv                  co_thread::run_impl()
 
 
-#co_thread::run()
-_ZN9co_thread3runEv:
+#co_thread::run(int)
+_ZN9co_thread3runEi:
         #save_user_context
         mov 8(%rdi),%rax  # 把m_local_state的指针保存在rax
         mov (%rsp),%rcx   # 把rip保存到rcx
@@ -29,7 +29,7 @@ _ZN9co_thread3runEv:
         mov %r13,56(%rax) # m_local_state[7]=r13
         mov %r14,64(%rax) # m_local_state[8]=r14
         mov %r15,72(%rax) # m_local_state[9]=r15
-
+        
         #call co_thread::run_impl()
         #rdi haven't change ,so no need to set rdi
         push %rdi
@@ -41,18 +41,23 @@ _ZN9co_thread3runEv:
         jmp switch
 return:
         ret
-switch:  
+switch: 
         #restore_cothread_context
         mov (%rdi),%rax   # 把m_addr的指针保存在rax
-        mov 72(%rax),%r15 # r15=m_local_state[9]
-        mov 64(%rax),%r14 # r14=m_local_state[8]
-        mov 56(%rax),%r13 # r13=m_local_state[7]
-        mov 48(%rax),%r12 # r12=m_local_state[6]
+        mov 72(%rax),%r15 # r15=m_addr[9]
+        mov 64(%rax),%r14 # r14=m_addr[8]
+        mov 56(%rax),%r13 # r13=m_addr[7]
+        mov 48(%rax),%r12 # r12=m_addr[6]
         mov 40(%rax),%rbx # rbx=m_addr[5]
         mov 32(%rax),%rsi # rsi=m_addr[4]
         mov 24(%rax),%rdi # rdi=m_addr[3]
         mov 16(%rax),%rbp # rbp=m_addr[2]
         mov 8(%rax),%rsp  # rsp=m_addr[1]
+
+        #set rax=rsi(event parameter saved before)
+        mov 8(%rdi),%rax
+        mov 32(%rax),%rax
+
         ret               # ret to m_addr[0]
 
 # co_thread::yield()
@@ -66,10 +71,10 @@ _ZN9co_thread5yieldEv:
         mov %rdi,24(%rax) # m_addr[3]=rdi
         mov %rsi,32(%rax) # m_addr[4]=rsi
         mov %rbx,40(%rax) # m_addr[5]=rbx
-        mov %r12,48(%rax) # m_local_state[6]=r12
-        mov %r13,56(%rax) # m_local_state[7]=r13
-        mov %r14,64(%rax) # m_local_state[8]=r14
-        mov %r15,72(%rax) # m_local_state[9]=r15
+        mov %r12,48(%rax) # m_addr[6]=r12
+        mov %r13,56(%rax) # m_addr[7]=r13
+        mov %r14,64(%rax) # m_addr[8]=r14
+        mov %r15,72(%rax) # m_addr[9]=r15
 
         #call co_thread::yield_impl()
         push %rdi
@@ -124,10 +129,10 @@ _ZN9co_thread11yield_eventEii:
         mov %rdi,24(%rax) # m_addr[3]=rdi
         mov %rsi,32(%rax) # m_addr[4]=rsi
         mov %rbx,40(%rax) # m_addr[5]=rbx
-        mov %r12,48(%rax) # m_local_state[6]=r12
-        mov %r13,56(%rax) # m_local_state[7]=r13
-        mov %r14,64(%rax) # m_local_state[8]=r14
-        mov %r15,72(%rax) # m_local_state[9]=r15
+        mov %r12,48(%rax) # m_addr[6]=r12
+        mov %r13,56(%rax) # m_addr[7]=r13
+        mov %r14,64(%rax) # m_addr[8]=r14
+        mov %r15,72(%rax) # m_addr[9]=r15
 
         #call co_thread::yield_event_impl(int, int)
         #rdi,rsi,rdx didn't change, no need to reset parameters
@@ -162,10 +167,10 @@ _ZN9co_thread9yield_forEi:
         mov %rdi,24(%rax) # m_addr[3]=rdi
         mov %rsi,32(%rax) # m_addr[4]=rsi
         mov %rbx,40(%rax) # m_addr[5]=rbx
-        mov %r12,48(%rax) # m_local_state[6]=r12
-        mov %r13,56(%rax) # m_local_state[7]=r13
-        mov %r14,64(%rax) # m_local_state[8]=r14
-        mov %r15,72(%rax) # m_local_state[9]=r15
+        mov %r12,48(%rax) # m_addr[6]=r12
+        mov %r13,56(%rax) # m_addr[7]=r13
+        mov %r14,64(%rax) # m_addr[8]=r14
+        mov %r15,72(%rax) # m_addr[9]=r15
 
         #call co_thread::yield_for_impl(int)
         #rdi,rsi didn't change
@@ -224,10 +229,10 @@ _ZN9co_thread12yield_eventsEPiS0_i:
         mov %rdi,24(%rax) # m_addr[3]=rdi
         mov %rsi,32(%rax) # m_addr[4]=rsi
         mov %rbx,40(%rax) # m_addr[5]=rbx
-        mov %r12,48(%rax) # m_local_state[6]=r12
-        mov %r13,56(%rax) # m_local_state[7]=r13
-        mov %r14,64(%rax) # m_local_state[8]=r14
-        mov %r15,72(%rax) # m_local_state[9]=r15
+        mov %r12,48(%rax) # m_addr[6]=r12
+        mov %r13,56(%rax) # m_addr[7]=r13
+        mov %r14,64(%rax) # m_addr[8]=r14
+        mov %r15,72(%rax) # m_addr[9]=r15
 
         #restore rcx
         pop %rcx

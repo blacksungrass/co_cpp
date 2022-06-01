@@ -25,5 +25,5 @@ public:
     long add_event(int fd, int event, co_thread* ptr);
     void cancel_event(long);
     void cancel_co_thread(co_thread*);
-    void handle_event(std::function<void(co_thread*)> func,int timeout);
+    void handle_event(std::function<void(co_thread*,int)> func,int timeout);
 };

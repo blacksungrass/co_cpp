@@ -23,10 +23,10 @@ private:
     std::set<co_thread*> cancel_list,add_list;
     co_event_manager m_event_manager;
     std::set<co_thread*> valid_cothreads;
-    std::map<co_thread*,std::vector<long>> co_thread_events;
+    std::map<co_thread*,int> co_thread_event;
 
     void remove_canceled_task();
-    void handle_activated_cothread(co_thread*);
+    void handle_activated_cothread(co_thread*,int);
     void process_rd_list();
     void remove_co_thread(co_thread*);
 public:

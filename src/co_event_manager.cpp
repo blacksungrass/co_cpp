@@ -144,14 +144,14 @@ static void erase_if(std::set<event_info_node*>& set, std::function<bool(event_i
     }
 }
 
-void co_event_manager::handle_event(std::function<void(co_thread*)> func,int timeout){
+void co_event_manager::handle_event(std::function<void(co_thread*,int)> func,int timeout){
     epoll_event events[200];
     int ret = epoll_wait(epoll_fd,events,200,timeout);
     for(int i=0;i<ret;++i){
         int fd = events[i].data.fd;
         erase_if(fd_record[fd],[&](event_info_node* node)->bool{
             if(node->events&events[i].events){
-                func(node->thread_ptr);
+                func(node->thread_ptr,node->events&events[i].events);
                 delete_event((long)node,false,true);
                 return true;
             }

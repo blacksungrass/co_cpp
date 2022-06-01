@@ -10,11 +10,12 @@ include_directories(examples/utils/)
 
 
 add_library(co_cpp
-            SHARED
+            STATIC
             src/co_env.cpp 
-            src/co_env.S
             src/co_event_manager.cpp 
-            src/connection.cpp)
+            src/connection.cpp
+            src/co_thread.cpp
+            src/co_thread.S)
 
 add_subdirectory(examples/basic)
 add_subdirectory(examples/echo_server)
