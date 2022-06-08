@@ -6,7 +6,7 @@
 引入co_env.h文件即可,使用方法可以参考文档:https://blacksungrass.github.io/co_cpp/
 ## TODOs
 - [x] 解决在co_thread中使用cout会报错的问题
-- [ ] connection.cpp中的api加上timeout参数
+- [x] connection.cpp中的api加上timeout参数
 - [ ] 添加日志
 - [ ] 完善文档
 - [ ] 完善例程

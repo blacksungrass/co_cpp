@@ -19,9 +19,11 @@ using co_thread_func_t = void(*)(co_thread&,void*);
 
 class co_env{
 private:
-    std::set<co_thread*> rd_list,block_list;
-    std::set<co_thread*> cancel_list,add_list;
-    co_event_manager m_event_manager;
+    std::set<co_thread*> rd_list;//就绪任务集合
+    std::set<co_thread*> block_list;//阻塞任务集合
+    std::set<co_thread*> cancel_list;//取消任务集合
+    std::set<co_thread*> add_list;//新增任务集合
+    co_event_manager m_event_manager;//时间管理器
     std::set<co_thread*> valid_cothreads;
     std::map<co_thread*,int> co_thread_fd;
     std::map<co_thread*,int> co_thread_event;
